@@ -1,0 +1,14 @@
+# Build outputs
+build/
+
+# Runtime and trace logs
+*.log
+*.pcap
+*.json
+
+# Python artifacts
+__pycache__/
+*.pyc
+
+# Mininet runtime temp files
+.p4s/
