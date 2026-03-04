@@ -1,8 +1,7 @@
 #include <core.p4>
 #include <v1model.p4>
 
-struct metadata {}
-struct headers {}
+#include "headers.p4"
 
 parser TopParser(packet_in packet,
                  out headers hdr,
