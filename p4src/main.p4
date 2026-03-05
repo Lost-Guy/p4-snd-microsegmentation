@@ -2,15 +2,7 @@
 #include <v1model.p4>
 
 #include "headers.p4"
-
-parser TopParser(packet_in packet,
-                 out headers hdr,
-                 inout metadata meta,
-                 inout standard_metadata_t standard_metadata) {
-    state start {
-        transition accept;
-    }
-}
+#include "parser.p4"
 
 control TopVerifyChecksum(inout headers hdr, inout metadata meta) {
     apply {}
@@ -29,10 +21,6 @@ control TopEgress(inout headers hdr,
 }
 
 control TopComputeChecksum(inout headers hdr, inout metadata meta) {
-    apply {}
-}
-
-control TopDeparser(packet_out packet, in headers hdr) {
     apply {}
 }
 
