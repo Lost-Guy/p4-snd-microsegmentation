@@ -5,6 +5,7 @@ build/
 *.log
 *.pcap
 *.json
+!p4app.json
 
 # Python artifacts
 __pycache__/
