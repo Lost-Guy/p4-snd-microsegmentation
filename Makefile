@@ -21,6 +21,7 @@ compile: $(SRC)
 run-topo: compile
 	tar -czf /tmp/app.tar.gz --exclude='.git' --exclude='build' .
 	docker run --privileged --rm -it \
+		-v $(CURDIR):/workspace \
 		-v /tmp/app.tar.gz:/tmp/app.tar.gz \
 		-v /lib/modules:/lib/modules \
 		$(DOCKER_IMAGE) /tmp/app.tar.gz
