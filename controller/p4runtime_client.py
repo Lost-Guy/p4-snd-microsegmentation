@@ -93,6 +93,24 @@ def configure_host_namespaces():
 
     print("Host namespaces configured with static ARP and rx/tx checksum offloading disabled.")
 
+def program_microsegmentation(thrift_port):
+    """Inject zero-trust policy rules into tbl_microsegmentation."""
+    table = "PipelineIngress.microsegmentation.tbl_microsegmentation"
+    action = "PipelineIngress.microsegmentation.allow"
+    
+    cmds = [
+        "table_clear " + table,
+        # Allow h1 (10.0.0.1) <-> h2 (10.0.0.2) ICMP
+        "table_add {} {} 10.0.0.1 10.0.0.2 1 =>".format(table, action),
+        "table_add {} {} 10.0.0.2 10.0.0.1 1 =>".format(table, action),
+        # Allow h1 (10.0.0.1) <-> h3 (10.0.0.3) ICMP
+        "table_add {} {} 10.0.0.1 10.0.0.3 1 =>".format(table, action),
+        "table_add {} {} 10.0.0.3 10.0.0.1 1 =>".format(table, action),
+        "table_dump " + table
+    ]
+    out, _ = run_thrift_cli(thrift_port, cmds)
+    print("Micro-segmentation policy output (port {}):\n{}".format(thrift_port, out))
+
 def main():
     table_name, action_name, available_tables = discover_switch_schema(9090)
     print("Discovered runtime tables: {}".format(available_tables))
@@ -138,6 +156,10 @@ def main():
     print("CLI Output (s2):\n" + out2)
 
     print("\nP4 forwarding tables and host namespaces successfully programmed.")
+
+    # Program Micro-Segmentation Policies
+    program_microsegmentation(9090)
+    program_microsegmentation(9091)
 
 if __name__ == '__main__':
     main()

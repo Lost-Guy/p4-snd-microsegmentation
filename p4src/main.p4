@@ -30,16 +30,53 @@ control TopComputeChecksum(inout headers hdr, inout metadata meta) {
     }
 }
 
+control TopMicrosegmentation(inout headers hdr,
+                             inout metadata meta,
+                             inout standard_metadata_t standard_metadata) {
+
+    action allow() {
+        // Permit packet to proceed through pipeline
+    }
+
+    action drop_flow() {
+        mark_to_drop(standard_metadata);
+    }
+
+    table tbl_microsegmentation {
+        key = {
+            hdr.ipv4.srcAddr  : exact;
+            hdr.ipv4.dstAddr  : exact;
+            hdr.ipv4.protocol : exact;
+        }
+        actions = {
+            allow;
+            drop_flow;
+        }
+        default_action = drop_flow();
+        size = 1024;
+    }
+
+    apply {
+        if (hdr.ipv4.isValid()) {
+            if (!tbl_microsegmentation.apply().hit) {
+                drop_flow();
+            }
+        }
+    }
+}
+
 control PipelineIngress(inout headers hdr,
                        inout metadata meta,
                        inout standard_metadata_t standard_metadata) {
 
     TopIngressTelemetry() telemetry;
+	TopMicrosegmentation() microsegmentation;
     TopIngress() forwarding;
 
     apply {
         telemetry.apply(hdr, meta, standard_metadata);
         forwarding.apply(hdr, meta, standard_metadata);
+		microsegmentation.apply(hdr, meta, standard_metadata);
     }
 }
 
