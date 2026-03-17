@@ -111,6 +111,25 @@ def program_microsegmentation(thrift_port):
     out, _ = run_thrift_cli(thrift_port, cmds)
     print("Micro-segmentation policy output (port {}):\n{}".format(thrift_port, out))
 
+def fetch_telemetry(thrift_port, sw_name):
+    """Dump table entries along with real-time hit and drop counter statistics."""
+    table = "PipelineIngress.microsegmentation.tbl_microsegmentation"
+    cmds = ["table_dump " + table]
+    out, _ = run_thrift_cli(thrift_port, cmds)
+    print("\n=== Real-Time Telemetry & Flow Counters [{}] (Port {}) ===".format(sw_name, thrift_port))
+    print(out)
+
+def dynamic_permit_flow(thrift_port, src_ip, dst_ip, proto=1):
+    """Dynamically grant access to a previously blocked flow at runtime."""
+    table = "PipelineIngress.microsegmentation.tbl_microsegmentation"
+    action = "allow"
+    cmds = [
+        "table_add {} {} {} {} {} =>".format(table, action, src_ip, dst_ip, proto),
+        "table_add {} {} {} {} {} =>".format(table, action, dst_ip, src_ip, proto),
+    ]
+    run_thrift_cli(thrift_port, cmds)
+    print("[+] Dynamically PERMITTED flow: {} <-> {} (proto {}) on port {}".format(src_ip, dst_ip, proto, thrift_port))
+
 def main():
     table_name, action_name, available_tables = discover_switch_schema(9090)
     print("Discovered runtime tables: {}".format(available_tables))

@@ -34,11 +34,14 @@ control TopMicrosegmentation(inout headers hdr,
                              inout metadata meta,
                              inout standard_metadata_t standard_metadata) {
 
+	direct_counter(CounterType.packets_and_bytes) microseg_counter;
+
     action allow() {
-        // Permit packet to proceed through pipeline
+        microseg_counter.count();
     }
 
     action drop_flow() {
+		microseg_counter.count();
         mark_to_drop(standard_metadata);
     }
 
@@ -53,6 +56,7 @@ control TopMicrosegmentation(inout headers hdr,
             drop_flow;
         }
         default_action = drop_flow();
+		counters = microseg_counter;
         size = 1024;
     }
 
