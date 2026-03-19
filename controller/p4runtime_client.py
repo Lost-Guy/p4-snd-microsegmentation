@@ -130,6 +130,20 @@ def dynamic_permit_flow(thrift_port, src_ip, dst_ip, proto=1):
     run_thrift_cli(thrift_port, cmds)
     print("[+] Dynamically PERMITTED flow: {} <-> {} (proto {}) on port {}".format(src_ip, dst_ip, proto, thrift_port))
 
+def configure_ddos_mitigation(thrift_port):
+    """Configure DDoS meter rate limits per ingress port."""
+    meter_name = "PipelineIngress.ddos_protection.ddos_meter"
+    cmds = []
+    
+    # Rates defined in packets per microsecond (BMv2 standard):
+    # CIR = 0.0001 (100 pkts/sec), CBS = 10 pkts
+    # PIR = 0.0004 (400 pkts/sec), PBS = 15 pkts
+    for port_idx in range(1, 4):
+        cmds.append("meter_set_rates {} {} 0.0001:10 0.0004:15".format(meter_name, port_idx))
+    
+    out, _ = run_thrift_cli(thrift_port, cmds)
+    print("DDoS meter rates configured on Thrift port {}".format(thrift_port))
+
 def main():
     table_name, action_name, available_tables = discover_switch_schema(9090)
     print("Discovered runtime tables: {}".format(available_tables))
@@ -179,6 +193,10 @@ def main():
     # Program Micro-Segmentation Policies
     program_microsegmentation(9090)
     program_microsegmentation(9091)
+
+    # DDOS mitigation
+    configure_ddos_mitigation(9090)
+    configure_ddos_mitigation(9091)
 
 if __name__ == '__main__':
     main()

@@ -48,6 +48,7 @@ header tcp_t {
 // Custom Metadata passed across pipeline controls
 struct metadata {
     bit<32> flow_packet_count;
+	bit<8> meter_color;
 }
 
 // Master Header Struct containing parsed protocol fields

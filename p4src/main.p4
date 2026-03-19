@@ -69,16 +69,41 @@ control TopMicrosegmentation(inout headers hdr,
     }
 }
 
+control TopDDoSProtection(inout headers hdr,
+                          inout metadata meta,
+                          inout standard_metadata_t standard_metadata) {
+
+    // Indexed meter for rate-limiting (1024 entries, packet-based)
+    meter(1024, MeterType.packets) ddos_meter;
+
+    apply {
+        if (hdr.ipv4.isValid()) {
+            // Index meter per ingress port
+            bit<32> meter_idx = (bit<32>)standard_metadata.ingress_port;
+
+            // Execute meter: outputs 0=GREEN, 1=YELLOW, 2=RED
+            ddos_meter.execute_meter(meter_idx, meta.meter_color);
+
+            // Drop traffic if rate exceeds Peak Information Rate (RED / color == 2)
+            if (meta.meter_color == 2) {
+                mark_to_drop(standard_metadata);
+            }
+        }
+    }
+}
+
 control PipelineIngress(inout headers hdr,
                        inout metadata meta,
                        inout standard_metadata_t standard_metadata) {
 
     TopIngressTelemetry() telemetry;
-	TopMicrosegmentation() microsegmentation;
+	TopDDoSProtection() ddos_protection;
     TopIngress() forwarding;
+	TopMicrosegmentation() microsegmentation;
 
     apply {
         telemetry.apply(hdr, meta, standard_metadata);
+		ddos_protection.apply(hdr, meta, standard_metadata);
         forwarding.apply(hdr, meta, standard_metadata);
 		microsegmentation.apply(hdr, meta, standard_metadata);
     }
